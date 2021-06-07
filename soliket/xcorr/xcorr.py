@@ -5,6 +5,9 @@
 :Authors: Ian Harrison. From orginal xcorr by Andrina Nicola, Alex Krolewski, Emmanuel Schaan
 
 """
+import numpy as np
+from cachetools import cached
+
 from ..gaussian import GaussianData, GaussianLikelihood
 from ..ps import PSLikelihood
 from .halofit import HalofitPowerSpectrum
@@ -16,6 +19,12 @@ class XcorrLikelihood(GaussianLikelihood):
         name: str = "Xcorr"
         self.log.info('Initialising.')
 
+        dndz_file: Optional[str]
+        auto_file: Optional[str]
+        cross_file: Optional[str]
+
+        self.dndz = np.loadtxt(self.dndz_file)
+
         x, y, dy = self._get_data()
         if self.covpath is None:
             self.log.info('No Xcorr covariance specified. Using diag(dy^2).')
@@ -23,9 +32,6 @@ class XcorrLikelihood(GaussianLikelihood):
         else:
             cov = self._get_cov()
         self.data = GaussianData(self.name, x, y, cov)
-
-    def get_requirements(self):
-
 
     def _get_data(self, **params_values):
         data_auto = np.loadtxt(self.auto_file)
@@ -46,7 +52,7 @@ class XcorrLikelihood(GaussianLikelihood):
 
         return x, y, dy
 
-    def _get_theory(s_wise=0.4,
+    def _get_theory(s1=0.4,
                     b1=1.0,
                     b2=0.0,
                     bs=0.0,
@@ -56,10 +62,10 @@ class XcorrLikelihood(GaussianLikelihood):
                     SN=1e-7,
                     shift=0.0,
                     width=1.0,
-                    _theory={'Pk_interpolator': {'z': np.linspace(0,zmax,Nz), 
-                             'k_max': kmax, 'nonlinear': False,
+                    _theory={'Pk_interpolator': {'z': np.linspace(0,4.0,41), #FIXME: expose these defaults
+                             'k_max': 10.0, 'nonlinear': False,
                              'hubble_units': False,'k_hunit': False, 
-                             'vars_pairs': [[var,var]]}}):
+                             'vars_pairs': [['delta_nonu','delta_nonu']]}}):
         '''Function for the likelihood.'''
         t0 = time.time()
         Omegam = (_theory.get_param('ombh2') + _theory.get_param('omch2'))/((_theory.get_param('H0')/100.)**2.)
@@ -76,7 +82,7 @@ class XcorrLikelihood(GaussianLikelihood):
         SN_auto = SN
         SN_cross = 0.   
 
-        lim_cross, lim_auto = _get_angular_power_spectra(halofit, _theory, s_wise, Omegam, b1, b2, bs, alpha_auto, alpha_cross, alpha_matter, SN, shift, width)
+        lim_cross, lim_auto = _get_angular_power_spectra(halofit, _theory, s1, Omegam, b1, b2, bs, alpha_auto, alpha_cross, alpha_matter, SN, shift, width)
 
         #print('lim_auto immediately before bin',lim_auto)
 
@@ -92,10 +98,9 @@ class XcorrLikelihood(GaussianLikelihood):
 
         return np.concatenate([lim_bin_auto, lim_bin_cross])
 
-    def _get_data(self):
 
 def _get_angular_power_spectra(halofit,_theory,
-                                  s_wise=0.4,
+                                  s1=0.4,
                                   Omegam=0.3,
                                   b1=1.0,
                                   b2=0.0,
@@ -111,7 +116,7 @@ def _get_angular_power_spectra(halofit,_theory,
     Pk_interpolator = _theory.get_Pk_interpolator()['delta_nonu_delta_nonu'].P
     #print('pk interpolator',time.time()-t0)
 
-    auto, cross = _wrap_limber(Pk_interpolator, halofit, s_wise, _theory.get_param('As'), _theory.get_param('H0'),
+    auto, cross = _wrap_limber(Pk_interpolator, halofit, s1, _theory.get_param('As'), _theory.get_param('H0'),
                                 _theory.get_param('omch2'), _theory.get_param('ombh2'), _theory.get_param('mnu'),
                                 _theory.get_param('nnu'), _theory.get_param('ns'), _theory.get_param('tau'),
                                 _theory.get_param('num_massive_neutrinos'), shift, width, autoCMB)
@@ -149,9 +154,9 @@ def _setup_halofit(theory, H0, ombh2, omch2, nnu, mnu, num_massive_neutrinos, As
         var1=var,var2=var).P
     return halofit
 
-@cached(cache={}, key=lambda Pk_interpolator, halofit, s_wise, As, H0, omch2, ombh2, mnu, 
-    nnu, ns, tau, num_massive_neutrinos, shift, width, autoCMB: hashkey(s_wise, As, H0, omch2, ombh2, mnu, nnu, ns, tau, num_massive_neutrinos, shift, width, autoCMB))
-def _wrap_limber(Pk_interpolator, halofit, s_wise, As, H0, omch2, ombh2, mnu, nnu, ns, tau, num_massive_neutrinos, shift, width, autoCMB):
+@cached(cache={}, key=lambda Pk_interpolator, halofit, s1, As, H0, omch2, ombh2, mnu, 
+    nnu, ns, tau, num_massive_neutrinos, shift, width, autoCMB: hashkey(s1, As, H0, omch2, ombh2, mnu, nnu, ns, tau, num_massive_neutrinos, shift, width, autoCMB))
+def _wrap_limber(Pk_interpolator, halofit, s1, As, H0, omch2, ombh2, mnu, nnu, ns, tau, num_massive_neutrinos, shift, width, autoCMB):
     t0 = time.time()
     halofit_pk = _wrap_halofit(Pk_interpolator, halofit, As, H0, omch2, ombh2, mnu, nnu, ns, tau, num_massive_neutrinos)
     #print('cleft pk',time.time()-t0)
@@ -178,7 +183,7 @@ def _wrap_limber(Pk_interpolator, halofit, s_wise, As, H0, omch2, ombh2, mnu, nn
     alpha_cross = lambda z: 1.0
     alpha_auto = lambda z: 1.0
     
-    out = limber.do_limber(all_ell, cosmo, dndz_xcorr_modified, dndz_xcorr_modified, s_wise, s_wise, halofit_pk, b1_HF, b1_HF, alpha_auto, alpha_cross, Nchi=Nchi, autoCMB=autoCMB, use_zeff=False, dndz1_mag=dndz_xmatch, dndz2_mag=dndz_xmatch,setup_chi_flag=True,setup_chi_out=setup_chi_out)   
+    out = limber.do_limber(all_ell, cosmo, dndz_xcorr_modified, dndz_xcorr_modified, s1, s1, halofit_pk, b1_HF, b1_HF, alpha_auto, alpha_cross, Nchi=Nchi, autoCMB=autoCMB, use_zeff=False, dndz1_mag=dndz_xmatch, dndz2_mag=dndz_xmatch,setup_chi_flag=True,setup_chi_out=setup_chi_out)   
         
     return out
 

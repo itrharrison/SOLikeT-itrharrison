@@ -1,0 +1,13 @@
+auto_file: soliket/xcorr/data/clgg.txt
+cross_file: soliket/xcorr/data/clkg.txt
+dndz_file: soliket/xcorr/data/dndz.txt
+
+params:
+  b1: 
+    prior:
+      min: 0.
+      max: 10.
+    latex: b_1
+  s1: 
+    value: 0.4
+    latex: s_1
