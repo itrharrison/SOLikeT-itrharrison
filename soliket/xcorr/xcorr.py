@@ -9,7 +9,6 @@ import numpy as np
 from cachetools import cached
 
 from ..gaussian import GaussianData, GaussianLikelihood
-from ..ps import PSLikelihood
 from .halofit import HalofitPowerSpectrum
 from .utils import bin_cl, apply_shift, apply_width
 
