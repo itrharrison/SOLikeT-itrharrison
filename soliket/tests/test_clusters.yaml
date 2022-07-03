@@ -1,10 +1,5 @@
 debug: true
 
-likelihood:
-  soliket.ClusterLikelihood:
-    
-
-
 params:
 
   # fixed

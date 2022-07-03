@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 import pytest
 
 from cobaya.model import get_model
@@ -14,7 +15,7 @@ fiducial_params = {
     "nnu": 3.046,
 }
 
-info_fiducial = {
+info_unbinned = {
     "params": fiducial_params,
     "likelihood": {"soliket.UnbinnedClusterLikelihood": {"stop_at_error": True}},
     "theory": {
@@ -31,15 +32,20 @@ info_fiducial = {
     },
 }
 
+info_binned = copy.copy(info_unbinned)
+info_binned['likelihood'] = {"soliket.BinnedClusterLikelihood":
+                                    {"stop_at_error": True,
+                                     "datapath": './soliket/tests/data/toy_cashc.txt'}}
+
 
 def test_clusters_unbinned_model():
 
-    model_fiducial = get_model(info_fiducial)
+    model_fiducial = get_model(info_unbinned)
 
 
 def test_clusters_unbinned_loglike():
 
-    model_fiducial = get_model(info_fiducial)
+    model_fiducial = get_model(info_unbinned)
 
     lnl = model_fiducial.loglikes({})[0]
 
@@ -48,10 +54,15 @@ def test_clusters_unbinned_loglike():
 
 def test_clusters_unbinned_n_expected():
 
-    model_fiducial = get_model(info_fiducial)
+    model_fiducial = get_model(info_unbinned)
 
     lnl = model_fiducial.loglikes({})[0]
 
     like = model_fiducial.likelihood["soliket.UnbinnedClusterLikelihood"]
 
     assert like._get_n_expected() > 40
+
+
+def test_clusters_binned_model():
+
+    model_fiducial = get_model(info_binned)

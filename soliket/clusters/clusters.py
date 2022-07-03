@@ -9,6 +9,7 @@ from pkg_resources import resource_filename
 # import pyccl as ccl
 
 from ..poisson import PoissonLikelihood
+from ..cash import CashCLikelihood
 from . import massfunc as mf
 from .survey import SurveyData
 from .sz_utils import szutils
@@ -20,8 +21,25 @@ class SZModel:
     pass
 
 
+class BinnedClusterLikelihood(CashCLikelihood):
+    name = "Binned Clusters"
+
+    def initialize(self):
+
+        self.zarr = np.arange(0, 2, 0.05)
+
+        super().initialize()
+
+    def get_requirements(self):
+        return {
+            "Hubble": {"z": self.zarr},
+            "angular_diameter_distance": {"z": self.zarr},
+            "comoving_radial_distance": {"z": self.zarr}
+        }
+
+
 class UnbinnedClusterLikelihood(PoissonLikelihood):
-    name = "Clusters"
+    name = "Unbinned Clusters"
     columns = ["tsz_signal", "z", "tsz_signal_err"]
     data_path = resource_filename("soliket", "clusters/data/selFn_equD56")
     # data_path = resource_filename("soliket", "clusters/data/selFn_SO")
