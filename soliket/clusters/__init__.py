@@ -1,1 +1,1 @@
-from .clusters import ClusterLikelihood  # noqa: F401
+from .clusters import UnbinnedClusterLikelihood  # noqa: F401
