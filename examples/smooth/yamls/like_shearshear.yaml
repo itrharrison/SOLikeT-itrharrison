@@ -1,5 +1,5 @@
 soliket.cross_correlation.ShearShearLikelihood:
-  datapath: ./data/shearshear_smooth_mockdata.fits
+  datapath: ./data/des_mockdata.fits
   use_spectra: [[gs_d1, gs_d1],[gs_d1, gs_d2],[gs_d1, gs_d3],[gs_d1, gs_d4],[gs_d2, gs_d2],[gs_d2, gs_d3],[gs_d2, gs_d4],[gs_d3, gs_d3],[gs_d3, gs_d4],[gs_d4, gs_d4]]
   z_nuisance_mode: deltaz
   m_nuisance_mode: True

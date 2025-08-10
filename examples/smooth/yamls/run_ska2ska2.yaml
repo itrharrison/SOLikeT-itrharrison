@@ -1,6 +1,13 @@
 debug: False
 sampler:
-  # evaluate: null
+#   evaluate:
+#     override:
+#       H0: 67.7
+#       logA: 3.05
+#       ombh2: 0.0224
+#       omch2: 0.1202
+#       ns: 0.9649
+#       tau: 0.0544
   mcmc:
     Rminus1_cl_stop: 0.2
     Rminus1_stop: 0.01
@@ -9,7 +16,7 @@ sampler:
     oversample_power: 0.4
     proposal_scale: 1.9
 
-output: chains/ska1
+output: chains/ska2
 
 theory: !defaults [theory_camb, theory_ccl]
 

@@ -1,13 +1,20 @@
 debug: False
 sampler:
-  # evaluate: null
-  mcmc:
-    Rminus1_cl_stop: 0.2
-    Rminus1_stop: 0.01
-    drag: false
-    max_tries: 10000
-    oversample_power: 0.4
-    proposal_scale: 1.9
+  evaluate:
+    override:
+      H0: 67.7
+      logA: 3.05
+      ombh2: 0.0224
+      omch2: 0.1202
+      ns: 0.9649
+      tau: 0.0544
+  # mcmc:
+  #   Rminus1_cl_stop: 0.2
+  #   Rminus1_stop: 0.01
+  #   drag: false
+  #   max_tries: 10000
+  #   oversample_power: 0.4
+  #   proposal_scale: 1.9
 
 output: chains/shearshear-test
 

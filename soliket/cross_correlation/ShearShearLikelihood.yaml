@@ -34,30 +34,30 @@ params:
   gs_d4_sigmam:
     value: 0.01
   gs_s1_deltaz:
-    value: -0.02
+    value: 0.0
   gs_s2_deltaz:
-    value: -0.02
+    value: 0.0
   gs_s3_deltaz:
-    value: -0.02
+    value: 0.0
   gs_s4_deltaz:
-    value: -0.02
+    value: 0.0
   gs_s5_deltaz:
-    value: -0.02
+    value: 0.0
   gs_s1_m:
-    value: -0.04
+    value: 0.0
   gs_s2_m:
-    value: -0.04
+    value: 0.0
   gs_s3_m:
-    value: -0.04
+    value: 0.0
   gs_s4_m:
-    value: -0.04
+    value: 0.0
   gs_s5_m:
-    value: -0.04
+    value: 0.0
   gs_s1_sigmam:
-    value: 0.01
+    value: 0.0
   gs_s2_sigmam:
-    value: 0.01
+    value: 0.0
   gs_s3_sigmam:
-    value: 0.01
+    value: 0.0
   gs_s4_sigmam:
-    value: 0.01
+    value: 0.0
