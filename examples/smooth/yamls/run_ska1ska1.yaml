@@ -15,6 +15,7 @@ sampler:
     max_tries: 10000
     oversample_power: 0.4
     proposal_scale: 1.9
+    covmat: chains/shearshear-test.covmat
 
 output: chains/ska1
 
