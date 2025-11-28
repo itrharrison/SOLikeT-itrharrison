@@ -208,7 +208,128 @@ class GalaxyGalaxyLikelihood(CrossCorrelationLikelihood):
 
         return cl_binned_total
 
+class HIHILikelihood(CrossCorrelationLikelihood):
+    r"""
+    Likelihood for HI Intensity Mapping, taking the approach of https://arxiv.org/abs/2106.09786
+    and treating HI IM Cls as a case of number count Cls.
+    """
+    _allowable_tracers: ClassVar[list[str]] = ["hi_intensitymap"]
+    bias_mode: str | None
+    mag_bias_mode: str | None
+    params: dict
 
+    def _check_tracers(self):
+        # check correct tracers
+        for tracer_comb in self.sacc_data.get_tracer_combinations():
+
+            for tracer in tracer_comb:
+                if self.sacc_data.tracers[tracer].quantity not in self._allowable_tracers:
+                    raise LoggedError(
+                        self.log,
+                        f"You have tried to use a \
+                        {self.sacc_data.tracers[tracer].quantity} tracer in \
+                        {self.__class__.__name__}, which only allows \
+                        {self._allowable_tracers}. Please check your \
+                        tracer selection in the ini file.",
+                    )
+    
+    def _get_cl_instr(self, zi) -> np.ndarray:
+
+        T_sys = 28.
+        B = 20.e6
+        t_obs = 1.8e7
+        N_d = 254
+        S_area = 20000
+        D_d = 15
+        n_pol = 2
+        theta_B = 1.22 * 21.e-2 (1. + zi) / D_d
+
+        T1 = T_sys / (T_b(zi) * np.sqrt(n_pol * B * t_obs * N_d))
+        T2 = np.sqrt(S_area / theta_B**2.)
+
+        cl_instr = (T1 * T2 / T_b(zi))**2. * theta_B**2.
+
+        return cl_instr
+
+    def _get_cl_fg(ell, K_fg=6.e-7) -> np.ndarray:
+
+        S_area = 20000
+        fsky = 41253 / S_area
+
+        A = 0.129
+        b = -0.081
+        c = 0.581
+
+        F_ell = (1. / fsky) * A * np.exp(b * ell**c.)
+
+        cl_fg = K_fg * F_ell
+
+        return cl_fg
+
+
+    def _get_theory(self, **params_values) -> np.ndarray:
+        ccl, cosmo = self._get_CCL_results()
+
+        cl_binned_list: list[np.ndarray] = []
+
+        for tracer_comb in self.sacc_data.get_tracer_combinations():
+            tracers = [None] * 2
+            tracers_name = [None] * 2
+            
+            for itracer in [0, 1]:
+                tracers_name[itracer] = tracer_comb[itracer]
+
+                z_tracer = self.sacc_data.tracers[tracer_comb[itracer]].z
+                # nz_tracer = self.sacc_data.tracers[tracer_comb[itracer]].nz
+
+                hubble_z = self.provider.get_Hubble(self.z)
+                H0 = hubble_z[0]
+                h = H0 / 100
+                E_of_z = hubble_z / H0
+
+                Om_HI = 4. * np.power(1. + z_tracer, 0.6) * 1.e-4
+                nz_tracer = (44. / 2.45e-4) * (Om_HI * h) * (1. + z_tracer)**2. / E_of_z
+
+                if self.bias_mode is None:
+                        bias_z = None
+
+                elif self.bias_mode == "default":
+                    # bias = params_values[f"{tracers_name[0]}_b"]
+                    # bias_tracer = np.ones_like(z_tracer) * bias
+                    a = params_values[f"{tracers_name[0]}_a"]
+                    b = params_values[f"{tracers_name[0]}_b"]
+                    c = params_values[f"{tracers_name[0]}_c"]
+                    bias_tracer = a * np.power(1. + z_tracer, b) + c
+
+                if self.mag_mode is None:
+                        mag_z = None
+
+                elif self.mag_mode == "linear":
+                    mag_bias = params_values[f"{tracers_name[0]}_cmag"]
+                    mag_bias_tracer = np.ones_like(z_tracer) * cmag
+
+                tracers[itracer] = ccl.NumberCountsTracer(
+                        cosmo, dndz=(z_tracer, nz_tracer), bias=bias_tracer,
+                               mag_bias=mag_bias_tracer,has_rsd=False
+                    )
+
+        
+            bpw_idx = self.sacc_data.indices(tracers=tracer_comb)
+            bpw = self.sacc_data.get_bandpower_windows(bpw_idx)
+            ells_theory = np.asarray(bpw.values, dtype=int)
+            w_bins = bpw.weight.T
+
+            cl_unbinned = ccl.cells.angular_cl(cosmo, tracers[0], tracers[1], ells_theory)
+
+            cl_instr_unbinned = np.ones_like(cl_unbinned) * self._get_cl_instr(zi)
+            cl_fg_unbinned = self._get_cl_fg(ells_theory)
+
+            cl_binned = np.dot(w_bins, cl_unbinned + cl_instr_unbinned + cl_fg_unbinned)
+            cl_binned_list.append(cl_binned)
+
+        cl_binned_total = np.concatenate(cl_binned_list)
+
+        return cl_binned_total
 
 class ShearShearLikelihood(CrossCorrelationLikelihood):
     r"""
